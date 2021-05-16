@@ -1,0 +1,851 @@
+to setup
+  ca
+
+  ;; create turtles with given number
+  create-turtles initial-bubble-number [
+
+    ;; set random x and y cordinate
+    setxy random-xcor random-ycor
+
+    ;; set a random heading direction
+    set heading random 360
+
+    ;; set the shape to circle
+    set shape "circle 2"
+
+    ;; choose a color
+    set color one-of [blue white]
+
+    ;; initialize with a random size + offset ( since the random size could be zero, hence, we want bubbles to have atleast this much size )
+    set size random-float 0.5 + 0.1
+
+  ]
+
+  reset-ticks
+end
+
+
+
+
+
+
+to go
+
+  ;; ask the turtles to process collision (if colliding)
+  ask turtles [
+
+        process-collision
+
+  ]
+
+  ;; ask the turtles to bounce from wall (if colliding)
+  ask turtles [
+
+    bounce-back-if-wall-collision
+
+  ]
+
+  ;; ask the turtles to move
+  ask turtles [
+
+    move
+
+  ]
+
+  ;; add more bubbles from bottom (if incoming bubble rate is non-zero)
+  add-more-bubbles
+
+  tick
+end
+
+
+
+
+
+
+to process-collision
+
+    ;; choose the nearest bubble as the bubble with least distance
+    let nearest-bubble min-one-of other turtles [ distance myself ]
+
+    ;; if nearest bubble exists
+    if nearest-bubble != nobody [
+
+        ;; radius of first bubble (the bubble in context)
+        let r1 [size / 2] of self
+
+        ;; radius of second bubble (the nearest bubble to the bubble in context)
+        let r2 [size / 2] of nearest-bubble
+
+        ;; calculate Euclidean distance between the centers of the two bubbles
+        let distance-between-centers sqrt(( [xcor] of nearest-bubble - [xcor] of self ) ^ 2 + ( [ycor] of nearest-bubble - [ycor] of self ) ^ 2 )
+
+        ;; if they are in colliding state
+        if distance-between-centers <= ( r1 + r2 ) [
+
+             ;; process collision with the probability of collision
+             if random 100 < probability-of-collision [
+
+                  ;; the nearest bubble dies
+                  ask nearest-bubble [ die ]
+
+                  ;; the size of first bubble increases with probability of increasing size
+                  if random 100 < increase-size-probability-if-collide   [
+
+                        set size 2 * sqrt(( r1 * r1 ) + ( r2 * r2 ))
+
+                        ;; Putting a maximum cap on the size of a bubble, otherwise the size of bubbles is unbounded
+                        ;; in real-life it can be related as if the sizes of bubbles do not increase after a certain amount due to various factors
+                        if size > 7 [
+                            set size 7
+                        ]
+
+                  ]
+            ]
+
+        ]
+    ]
+end
+
+
+
+
+
+
+to bounce-back-if-wall-collision
+
+  ;; set a new random heading direction if collide with walls
+  if ( xcor < min-pxcor ) or ( ycor < min-pycor ) or ( xcor > max-pxcor ) or ( ycor > max-pycor )  [
+
+     set heading random 360
+
+  ]
+
+end
+
+
+
+
+
+
+to move
+
+  ;; turn to right randomly from 0 to 10 degrees
+  rt random 10
+
+  ;; turn to left randomly from 0 to 10 degrees
+  lt random 10
+
+  ;; move forward
+  fd 0.1
+
+end
+
+
+
+
+
+
+to add-more-bubbles
+
+  ;; create turtles with given incoming rate
+  create-turtles incoming-bubble-rate [
+
+    ;; set random x cordinate, and y cordinate to be bottom edge of the world
+    setxy random-xcor min-pycor
+
+    ;; set heading as if bubbles are rising up
+    set heading 0
+
+    ;; the other properties are similar to that mentioned in "setup"
+    set shape "circle 2"
+    set color one-of [white blue]
+    set size random-float 0.5 + 0.1
+  ]
+end
+@#$#@#$#@
+GRAPHICS-WINDOW
+268
+46
+777
+556
+-1
+-1
+15.2
+1
+10
+1
+1
+1
+0
+0
+0
+1
+-16
+16
+-16
+16
+1
+1
+1
+ticks
+30.0
+
+BUTTON
+58
+259
+122
+292
+Setup
+setup
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+134
+259
+197
+292
+Go
+go
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+SLIDER
+27
+45
+238
+78
+probability-of-collision
+probability-of-collision
+0
+100
+70.0
+1
+1
+NIL
+HORIZONTAL
+
+PLOT
+801
+48
+1474
+285
+Number of Bubbles
+Time
+Bubbles
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot count turtles"
+
+PLOT
+800
+313
+1139
+556
+Average Radius
+Time
+NIL
+0.0
+10.0
+0.0
+1.0
+true
+true
+"" ""
+PENS
+"Mean Radius" 1.0 0 -13345367 true "" "plot mean [size / 2] of turtles"
+"Max Raduis" 1.0 0 -4699768 true "plot max [size / 2] of turtles" "plot max [size / 2] of turtles"
+
+SLIDER
+28
+92
+237
+125
+initial-bubble-number
+initial-bubble-number
+1
+2000
+2000.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+28
+139
+238
+172
+increase-size-probability-if-collide
+increase-size-probability-if-collide
+0
+100
+69.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+28
+189
+235
+222
+incoming-bubble-rate
+incoming-bubble-rate
+0
+100
+0.0
+1
+1
+NIL
+HORIZONTAL
+
+PLOT
+1152
+313
+1475
+556
+Distribution of Radius
+Radius of Bubbles
+Number of Bubbles
+0.0
+4.0
+0.0
+10.0
+true
+false
+"set-plot-y-range 1 count turtles + 1" "set-plot-y-range 1 count turtles + 1"
+PENS
+"default" 0.25 1 -16777216 true "histogram ( [ size / 2 ] ) of turtles" "histogram ( [ size / 2 ]  ) of turtles"
+
+@#$#@#$#@
+## 1. Purpose and patterns
+
+**Purpose:** The primary purpose of this model is to explore the phenomenon of bubble bursting and collision. Bubbles are fascinating objects that exist in real life. This model provides a way to treat bubbles as agents who move randomly, collide with each other, burst, and increase their sizes. This model can be used to answer questions such as how long does it take for all bubbles to burst? How the dimensions and number of bubbles vary with time? Is there any relationship between these two?
+
+**Patterns:** The model uses a setting where bubbles are contained in a fluid surrounding wall. Bubbles interact among themselves, and with the wall of the fluid, more bubbles can also be produced. The emergent outcomes of the model are the number of bubbles, their dimension statistics such as mean and maximum radius, and the distribution of radius.
+
+Here, the real system being modeled is bubbles contained inside the fluid. The literature has shown results about the total volume of bubbles in a similar setting. Those results can be observed from the emergent pattern from the model as well. 
+
+## 2. State variables and scales
+
+**Agents**: The agents in this model are bubbles (turtles) that collide with each other and with the container walls where fluid is placed. 
+
+**Environment**: The patches represent the fluid, i.e., the environment where the bubbles exist. The boundaries of the world (in NetLogo lingo) represent the boundaries of the container. The world is made up of 33 by 33 patches with no wrapping at its edges.
+
+**State Variables**: Bubbles have state variables, their current radius (size / 2), XY-coordinates of the center, and heading direction.
+
+**Spatial Scale**: The sizes of the bubbles match the size of bubbles that we can see through the naked eye in real life. However, the scale can also be considered to be microscopic as some bubbles are very tiny in real life.
+
+**Temporal Scale**: The bubbles (or microscopic bubbles) could move at various speeds in real life depending upon so many factors. If the model runs with the usual NetLogo tick speed, we can observe how bubbles interact. The bubbles in real-life could be slower or faster compared to this.
+
+## 3. Process overview and scheduling
+
+The model includes the following actions that are executed in this order each time step.
+
+**Reacting to a collision with another bubble:** First, the bubbles find their nearest bubble (let us call this the second bubble and the bubble in context to be the first bubble) and check if they are colliding, i.e., if the distance between their centers is less than or equal to the sum of their radius.
+
+If this condition is true, then with a _probability-of-collision_ probability indicated by a slider, the bubbles actually react to the collision. 
+
+If they choose to react to collision, then the second bubble dies immediately. The radius of the first bubble is increased such that the total area now being covered by the new, more giant bubble (the first Bubble) is equal to the sum of the areas of the previous two bubbles. Here, the first bubble can be considered a new bubble formed from the collision and bursting of the first and second bubbles.
+
+If they do not choose to react to collision, nothing happens. The agents execute this action in randomized order one by one.
+
+
+**Bouncing back:** If a bubble is colliding with an edge (wall) of the world (container), it chooses a new random direction heading. All the agents execute this action in randomized order one by one.
+
+
+**Moving:** The agents slightly deviate their heading and move forward one unit. On the NetLogo scale, it is 0.1 steps ahead. All the agents execute this action in randomized order one by one.
+
+**Addition of new agents:** New agents are added from the bottom edge of the world; a slider decides the number of agents added. By default, no new agents are added unless the slider value is non-zero.
+
+## 4. Design concepts
+
+**Basic principles**: The primary topic of this model is how bubbles interact in a natural fluid-like environment by behaving to predefined rules, and the complex system shows emergent behavior out of their individual decisions. 
+
+**Emergence**:  The model's primary output is the number of bubbles and the distribution of radius that show emergent behavior. Significant secondary output is the mean and the maximum radius of bubbles over time. 
+
+These outputs emerge from how individual bubbles make their decisions, but also from the probability of collision, the probability to increase the size if they choose to react to collision, and the incoming new bubble rate.
+
+The number of bubbles with time shows more emergence since it has an exponential decay which can indeed not be predicted from individual decisions of agents. Also, the distribution of radius follows a power-law distribution.
+
+**Adaptive behavior**:  
+
+Collision to other bubbles: In response to this type of stimuli, the bubbles have two alternatives. They can either not react, or if they react, then the second bubble would die, and the first bubble then has two choices. It can either increase its size or not. These two decisions are based on probabilities provided by the user as input. This is a primary adaptive behavior.
+
+Collision with walls of container: In response to this type of stimuli, the bubbles choose a new heading direction.
+
+Free movement: If none of the above cases occurs, bubbles are inside a fluid where they change their heading randomly and move forward.
+
+The first adaptive decisions are indirect objective seeking; the agents follow the rules based on probabilities given by the user.
+
+**Objective**: The objective of bubbles is to increase their size and move inside the fluid.
+
+**Prediction**: As of now, there is no prediction in the model.
+
+**Sensing**:  The bubbles sense their _nearest bubble_ to process for a possible collision. The rationale behind choosing a possible colliding bubble as the nearest bubble is that if the bubble in context is possibly in colliding state with multiple bubbles, then the nearest bubble will have higher chances.
+
+The bubbles can also sense if they are colliding with the boundary; this is done by checking their X and Y coordinates.
+
+**Interaction**: The bubbles interact with each other. They sense other bubbles, collide, burst, and increase their sizes. There is no hierarchy in this competition of being alive for a longer time since bubbles execute their action in randomized order, and all bubbles have identical rules. They change their direction slightly while moving forward. They also head in a new direction if they sense a wall which shows their bouncy nature in real life.
+
+**Stochasticity**: 
+
+The position and direction of movement of bubbles are stochastic: The values of X and Y coordinates of bubbles and their heading direction are set randomly. If new bubbles are added from the bottom, then their X coordinate is selected randomly. If the bubble collides with the wall, then its new direction is set randomly.
+
+The collision of bubbles is stochastic: If a bubble senses that its nearest bubble is in the state of collision, it chooses to react to collision with a probability set by the user, and the second bubble bursts.
+
+The increment of the size of bubbles is stochastic: If Bubble chooses to react to collision, then the other bubble would burst, and the size of the first bubble increases with a probability set by the user.
+
+Stochasticity is thus used to simulate the environment in the fluid where direction, position, and size of bubbles are highly variable. The number of bubbles is not correlated or hardwired with these. The random distribution and movement of bubbles make the results of this model incredibly variable.
+
+**Observation**: The view shows the bubbles in fluid with their current positions and sizes. Graphs plot the number of bubbles, distribution of radius, mean and maximum radius over time. The heading direction of bubbles is not represented but can be observed through their motion with time steps.
+
+## 5. Initialization
+
+The coordinates, sizes, and heading direction of the bubbles are initialized when setting up the model. The slider _intial-bubble-number_ determines the initial number of bubbles.
+
+Suppose the _incoming-bubble-rate_ slider is set to a non-zero value. In that case, many new bubbles come from the bottom at random X coordinate, and their heading direction is towards the top initially.
+
+The slider _probability-of-collision_ sets the probability with which bubbles would react if they collide; in reaction, the second bubble would burst. The size of the first bubble would increase with probability set by _increase-size-probability-if-collide_ slider. 
+
+The user can adjust these sliders, and results can be observed through graph plots and from the world view.
+
+## 6. Input data
+
+No time-series inputs are used.
+
+## 7. Submodels
+
+**Bubble collision:** Bubbles, if they are in colliding state, either choose to collide. As a result, the second bubble bursts, and depending upon a probability, the size of the first bubble increases. 
+
+Let us call the bubble in context the first bubble and the nearest bubble to that bubble (which could possibly collide with the first bubble) as the second bubble. Suppose the first bubble has radius _r1_ and the second bubble has radius _r2_, these bubbles are colliding if -
+
+((_X_<sub>1</sub> - _X_<sub>2</sub>) + (_Y_<sub>1</sub> - _Y_<sub>2</sub>)) <sup>0.5</sup> <= _r1_ + _r2_  
+
+where, _X_<sub>1</sub> and _Y_<sub>1</sub> are co-ordinates of the centre of first bubble and _X_<sub>2</sub> and _Y_<sub>2</sub> likewise for the second bubble. 
+
+i.e., for bubbles to be in a colliding condition, the distance between their centers should be less than or equal to the sum of their radius. 
+
+Now, if bubbles are colliding, and if they choose to react to collision, then the second bubble dies, and the size of the first Bubble is set to -
+
+(( _r1_ <sup>2</sup> ) + ( _r2_ <sup>2</sup> )) <sup>0.5</sup>
+
+**Bubble bouncing:** Bubbles sense wall, and since the world is not wrapped, they randomly change their direction.  
+
+**Addition of new bubbles:** This can be treated as an external source (an electric spark or pouring of fluid from the top) that generates bubbles from the bottom of the container where fluid is placed. These bubbles have identical behavioral rules with the existing bubbles.
+@#$#@#$#@
+default
+true
+0
+Polygon -7500403 true true 150 5 40 250 150 205 260 250
+
+airplane
+true
+0
+Polygon -7500403 true true 150 0 135 15 120 60 120 105 15 165 15 195 120 180 135 240 105 270 120 285 150 270 180 285 210 270 165 240 180 180 285 195 285 165 180 105 180 60 165 15
+
+arrow
+true
+0
+Polygon -7500403 true true 150 0 0 150 105 150 105 293 195 293 195 150 300 150
+
+box
+false
+0
+Polygon -7500403 true true 150 285 285 225 285 75 150 135
+Polygon -7500403 true true 150 135 15 75 150 15 285 75
+Polygon -7500403 true true 15 75 15 225 150 285 150 135
+Line -16777216 false 150 285 150 135
+Line -16777216 false 150 135 15 75
+Line -16777216 false 150 135 285 75
+
+bug
+true
+0
+Circle -7500403 true true 96 182 108
+Circle -7500403 true true 110 127 80
+Circle -7500403 true true 110 75 80
+Line -7500403 true 150 100 80 30
+Line -7500403 true 150 100 220 30
+
+butterfly
+true
+0
+Polygon -7500403 true true 150 165 209 199 225 225 225 255 195 270 165 255 150 240
+Polygon -7500403 true true 150 165 89 198 75 225 75 255 105 270 135 255 150 240
+Polygon -7500403 true true 139 148 100 105 55 90 25 90 10 105 10 135 25 180 40 195 85 194 139 163
+Polygon -7500403 true true 162 150 200 105 245 90 275 90 290 105 290 135 275 180 260 195 215 195 162 165
+Polygon -16777216 true false 150 255 135 225 120 150 135 120 150 105 165 120 180 150 165 225
+Circle -16777216 true false 135 90 30
+Line -16777216 false 150 105 195 60
+Line -16777216 false 150 105 105 60
+
+car
+false
+0
+Polygon -7500403 true true 300 180 279 164 261 144 240 135 226 132 213 106 203 84 185 63 159 50 135 50 75 60 0 150 0 165 0 225 300 225 300 180
+Circle -16777216 true false 180 180 90
+Circle -16777216 true false 30 180 90
+Polygon -16777216 true false 162 80 132 78 134 135 209 135 194 105 189 96 180 89
+Circle -7500403 true true 47 195 58
+Circle -7500403 true true 195 195 58
+
+circle
+false
+0
+Circle -7500403 true true 0 0 300
+
+circle 2
+false
+0
+Circle -7500403 true true 0 0 300
+Circle -16777216 true false 30 30 240
+
+cow
+false
+0
+Polygon -7500403 true true 200 193 197 249 179 249 177 196 166 187 140 189 93 191 78 179 72 211 49 209 48 181 37 149 25 120 25 89 45 72 103 84 179 75 198 76 252 64 272 81 293 103 285 121 255 121 242 118 224 167
+Polygon -7500403 true true 73 210 86 251 62 249 48 208
+Polygon -7500403 true true 25 114 16 195 9 204 23 213 25 200 39 123
+
+cylinder
+false
+0
+Circle -7500403 true true 0 0 300
+
+dot
+false
+0
+Circle -7500403 true true 90 90 120
+
+face happy
+false
+0
+Circle -7500403 true true 8 8 285
+Circle -16777216 true false 60 75 60
+Circle -16777216 true false 180 75 60
+Polygon -16777216 true false 150 255 90 239 62 213 47 191 67 179 90 203 109 218 150 225 192 218 210 203 227 181 251 194 236 217 212 240
+
+face neutral
+false
+0
+Circle -7500403 true true 8 7 285
+Circle -16777216 true false 60 75 60
+Circle -16777216 true false 180 75 60
+Rectangle -16777216 true false 60 195 240 225
+
+face sad
+false
+0
+Circle -7500403 true true 8 8 285
+Circle -16777216 true false 60 75 60
+Circle -16777216 true false 180 75 60
+Polygon -16777216 true false 150 168 90 184 62 210 47 232 67 244 90 220 109 205 150 198 192 205 210 220 227 242 251 229 236 206 212 183
+
+fish
+false
+0
+Polygon -1 true false 44 131 21 87 15 86 0 120 15 150 0 180 13 214 20 212 45 166
+Polygon -1 true false 135 195 119 235 95 218 76 210 46 204 60 165
+Polygon -1 true false 75 45 83 77 71 103 86 114 166 78 135 60
+Polygon -7500403 true true 30 136 151 77 226 81 280 119 292 146 292 160 287 170 270 195 195 210 151 212 30 166
+Circle -16777216 true false 215 106 30
+
+flag
+false
+0
+Rectangle -7500403 true true 60 15 75 300
+Polygon -7500403 true true 90 150 270 90 90 30
+Line -7500403 true 75 135 90 135
+Line -7500403 true 75 45 90 45
+
+flower
+false
+0
+Polygon -10899396 true false 135 120 165 165 180 210 180 240 150 300 165 300 195 240 195 195 165 135
+Circle -7500403 true true 85 132 38
+Circle -7500403 true true 130 147 38
+Circle -7500403 true true 192 85 38
+Circle -7500403 true true 85 40 38
+Circle -7500403 true true 177 40 38
+Circle -7500403 true true 177 132 38
+Circle -7500403 true true 70 85 38
+Circle -7500403 true true 130 25 38
+Circle -7500403 true true 96 51 108
+Circle -16777216 true false 113 68 74
+Polygon -10899396 true false 189 233 219 188 249 173 279 188 234 218
+Polygon -10899396 true false 180 255 150 210 105 210 75 240 135 240
+
+house
+false
+0
+Rectangle -7500403 true true 45 120 255 285
+Rectangle -16777216 true false 120 210 180 285
+Polygon -7500403 true true 15 120 150 15 285 120
+Line -16777216 false 30 120 270 120
+
+leaf
+false
+0
+Polygon -7500403 true true 150 210 135 195 120 210 60 210 30 195 60 180 60 165 15 135 30 120 15 105 40 104 45 90 60 90 90 105 105 120 120 120 105 60 120 60 135 30 150 15 165 30 180 60 195 60 180 120 195 120 210 105 240 90 255 90 263 104 285 105 270 120 285 135 240 165 240 180 270 195 240 210 180 210 165 195
+Polygon -7500403 true true 135 195 135 240 120 255 105 255 105 285 135 285 165 240 165 195
+
+line
+true
+0
+Line -7500403 true 150 0 150 300
+
+line half
+true
+0
+Line -7500403 true 150 0 150 150
+
+pentagon
+false
+0
+Polygon -7500403 true true 150 15 15 120 60 285 240 285 285 120
+
+person
+false
+0
+Circle -7500403 true true 110 5 80
+Polygon -7500403 true true 105 90 120 195 90 285 105 300 135 300 150 225 165 300 195 300 210 285 180 195 195 90
+Rectangle -7500403 true true 127 79 172 94
+Polygon -7500403 true true 195 90 240 150 225 180 165 105
+Polygon -7500403 true true 105 90 60 150 75 180 135 105
+
+plant
+false
+0
+Rectangle -7500403 true true 135 90 165 300
+Polygon -7500403 true true 135 255 90 210 45 195 75 255 135 285
+Polygon -7500403 true true 165 255 210 210 255 195 225 255 165 285
+Polygon -7500403 true true 135 180 90 135 45 120 75 180 135 210
+Polygon -7500403 true true 165 180 165 210 225 180 255 120 210 135
+Polygon -7500403 true true 135 105 90 60 45 45 75 105 135 135
+Polygon -7500403 true true 165 105 165 135 225 105 255 45 210 60
+Polygon -7500403 true true 135 90 120 45 150 15 180 45 165 90
+
+sheep
+false
+15
+Circle -1 true true 203 65 88
+Circle -1 true true 70 65 162
+Circle -1 true true 150 105 120
+Polygon -7500403 true false 218 120 240 165 255 165 278 120
+Circle -7500403 true false 214 72 67
+Rectangle -1 true true 164 223 179 298
+Polygon -1 true true 45 285 30 285 30 240 15 195 45 210
+Circle -1 true true 3 83 150
+Rectangle -1 true true 65 221 80 296
+Polygon -1 true true 195 285 210 285 210 240 240 210 195 210
+Polygon -7500403 true false 276 85 285 105 302 99 294 83
+Polygon -7500403 true false 219 85 210 105 193 99 201 83
+
+square
+false
+0
+Rectangle -7500403 true true 30 30 270 270
+
+square 2
+false
+0
+Rectangle -7500403 true true 30 30 270 270
+Rectangle -16777216 true false 60 60 240 240
+
+star
+false
+0
+Polygon -7500403 true true 151 1 185 108 298 108 207 175 242 282 151 216 59 282 94 175 3 108 116 108
+
+target
+false
+0
+Circle -7500403 true true 0 0 300
+Circle -16777216 true false 30 30 240
+Circle -7500403 true true 60 60 180
+Circle -16777216 true false 90 90 120
+Circle -7500403 true true 120 120 60
+
+tree
+false
+0
+Circle -7500403 true true 118 3 94
+Rectangle -6459832 true false 120 195 180 300
+Circle -7500403 true true 65 21 108
+Circle -7500403 true true 116 41 127
+Circle -7500403 true true 45 90 120
+Circle -7500403 true true 104 74 152
+
+triangle
+false
+0
+Polygon -7500403 true true 150 30 15 255 285 255
+
+triangle 2
+false
+0
+Polygon -7500403 true true 150 30 15 255 285 255
+Polygon -16777216 true false 151 99 225 223 75 224
+
+truck
+false
+0
+Rectangle -7500403 true true 4 45 195 187
+Polygon -7500403 true true 296 193 296 150 259 134 244 104 208 104 207 194
+Rectangle -1 true false 195 60 195 105
+Polygon -16777216 true false 238 112 252 141 219 141 218 112
+Circle -16777216 true false 234 174 42
+Rectangle -7500403 true true 181 185 214 194
+Circle -16777216 true false 144 174 42
+Circle -16777216 true false 24 174 42
+Circle -7500403 false true 24 174 42
+Circle -7500403 false true 144 174 42
+Circle -7500403 false true 234 174 42
+
+turtle
+true
+0
+Polygon -10899396 true false 215 204 240 233 246 254 228 266 215 252 193 210
+Polygon -10899396 true false 195 90 225 75 245 75 260 89 269 108 261 124 240 105 225 105 210 105
+Polygon -10899396 true false 105 90 75 75 55 75 40 89 31 108 39 124 60 105 75 105 90 105
+Polygon -10899396 true false 132 85 134 64 107 51 108 17 150 2 192 18 192 52 169 65 172 87
+Polygon -10899396 true false 85 204 60 233 54 254 72 266 85 252 107 210
+Polygon -7500403 true true 119 75 179 75 209 101 224 135 220 225 175 261 128 261 81 224 74 135 88 99
+
+wheel
+false
+0
+Circle -7500403 true true 3 3 294
+Circle -16777216 true false 30 30 240
+Line -7500403 true 150 285 150 15
+Line -7500403 true 15 150 285 150
+Circle -7500403 true true 120 120 60
+Line -7500403 true 216 40 79 269
+Line -7500403 true 40 84 269 221
+Line -7500403 true 40 216 269 79
+Line -7500403 true 84 40 221 269
+
+wolf
+false
+0
+Polygon -16777216 true false 253 133 245 131 245 133
+Polygon -7500403 true true 2 194 13 197 30 191 38 193 38 205 20 226 20 257 27 265 38 266 40 260 31 253 31 230 60 206 68 198 75 209 66 228 65 243 82 261 84 268 100 267 103 261 77 239 79 231 100 207 98 196 119 201 143 202 160 195 166 210 172 213 173 238 167 251 160 248 154 265 169 264 178 247 186 240 198 260 200 271 217 271 219 262 207 258 195 230 192 198 210 184 227 164 242 144 259 145 284 151 277 141 293 140 299 134 297 127 273 119 270 105
+Polygon -7500403 true true -1 195 14 180 36 166 40 153 53 140 82 131 134 133 159 126 188 115 227 108 236 102 238 98 268 86 269 92 281 87 269 103 269 113
+
+x
+false
+0
+Polygon -7500403 true true 270 75 225 30 30 225 75 270
+Polygon -7500403 true true 30 75 75 30 270 225 225 270
+@#$#@#$#@
+NetLogo 6.2.0
+@#$#@#$#@
+@#$#@#$#@
+@#$#@#$#@
+<experiments>
+  <experiment name="Monitor: Number of Bubbles, Parameter: Probability of Collision" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="300"/>
+    <metric>count turtles</metric>
+    <enumeratedValueSet variable="incoming-bubble-rate">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="increase-size-probability-if-collide">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <steppedValueSet variable="probability-of-collision" first="0" step="10" last="100"/>
+    <enumeratedValueSet variable="initial-bubble-number">
+      <value value="2000"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Monitor: Average Size of Bubbles, Parameter: Increase Size Probability" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="500"/>
+    <metric>mean [ size / 2 ] of turtles</metric>
+    <enumeratedValueSet variable="incoming-bubble-rate">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <steppedValueSet variable="increase-size-probability-if-collide" first="0" step="10" last="100"/>
+    <enumeratedValueSet variable="probability-of-collision">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-bubble-number">
+      <value value="2000"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Monitor: Number of Bubbles, Parameter: Incoming Bubble Rate" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="300"/>
+    <metric>count turtles</metric>
+    <steppedValueSet variable="incoming-bubble-rate" first="0" step="10" last="100"/>
+    <enumeratedValueSet variable="increase-size-probability-if-collide">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="probability-of-collision">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-bubble-number">
+      <value value="2000"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Monitor: Number of Bubbles (For Calibrating With Literature)" repetitions="1" runMetricsEveryStep="true">
+    <setup>setup</setup>
+    <go>go</go>
+    <timeLimit steps="400"/>
+    <metric>count turtles</metric>
+    <enumeratedValueSet variable="incoming-bubble-rate">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="increase-size-probability-if-collide">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="probability-of-collision">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-bubble-number">
+      <value value="2000"/>
+    </enumeratedValueSet>
+  </experiment>
+</experiments>
+@#$#@#$#@
+@#$#@#$#@
+default
+0.0
+-0.2 0 0.0 1.0
+0.0 1 1.0 0.0
+0.2 0 0.0 1.0
+link direction
+true
+0
+Line -7500403 true 150 150 90 180
+Line -7500403 true 150 150 210 180
+@#$#@#$#@
+0
+@#$#@#$#@
